@@ -1,0 +1,21 @@
+name: Check Mod
+
+on: [push, pull_request]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check mod compiles
+        run: cargo check --lib
+      - name: Validate with native.py
+        run: |
+          git clone https://github.com/horizon-rust/horizon-mods.git --depth=1
+          cd horizon-mods
+          python3 native/tools/native.py check ../shulker-box-tooltip
