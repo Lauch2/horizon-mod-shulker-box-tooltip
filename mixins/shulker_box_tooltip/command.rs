@@ -1,10 +1,9 @@
-use crate::game::shulker_box_tooltip as m;
-
 fn shulker_box_tooltip_command(
     game: &mut crate::game::Game<'_>,
     command: &str,
     ran: &mut bool,
 ) {
+    use crate::game::shulker_box_tooltip as m;
     let Some(args) = command.strip_prefix("shulkerpreview") else {
         return;
     };

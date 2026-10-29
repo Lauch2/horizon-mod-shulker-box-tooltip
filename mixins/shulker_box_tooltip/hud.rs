@@ -1,19 +1,10 @@
-use crate::game::shulker_box_tooltip as m;
-use horizon_client::extras::Corner;
-use horizon_client::extras_hud::Corners;
-
-const CORNERS: [Corner; 4] = [
-    Corner::TopLeft,
-    Corner::TopRight,
-    Corner::BottomLeft,
-    Corner::BottomRight,
-];
-
 fn shulker_box_tooltip_hud(
     game: &mut crate::game::Game<'_>,
     batch: &mut horizon_client::hud::HudBatch,
-    corners: &mut Corners,
+    corners: &mut horizon_client::extras_hud::Corners,
 ) {
+    use crate::game::shulker_box_tooltip as m;
+    use horizon_client::extras::Corner;
     if !game.native_on(m::ID) {
         return;
     }
@@ -56,7 +47,12 @@ fn shulker_box_tooltip_hud(
 
     m::PREVIEW_STATE.with(|s| s.set(Some(preview.clone())));
 
-    let corner = CORNERS[settings.corner.min(3)];
+    let corner = match settings.corner {
+        0 => Corner::TopLeft,
+        1 => Corner::TopRight,
+        2 => Corner::BottomLeft,
+        _ => Corner::BottomRight,
+    };
     if !game.native_corner_shown(corner) {
         return;
     }

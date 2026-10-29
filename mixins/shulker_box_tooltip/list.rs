@@ -1,8 +1,7 @@
-use crate::game::shulker_box_tooltip as m;
-
 fn shulker_box_tooltip_listed(
     mods: &mut Vec<crate::game::native_hooks::NativeMod>,
 ) {
+    use crate::game::shulker_box_tooltip as m;
     mods.push(crate::game::native_hooks::NativeMod {
         id: m::ID.into(),
         title: format!("{} {}", m::NAME, m::VERSION),

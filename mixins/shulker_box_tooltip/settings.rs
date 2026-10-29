@@ -1,10 +1,9 @@
-use crate::game::shulker_box_tooltip as m;
-
 fn shulker_box_tooltip_settings(
     game: &mut crate::game::Game<'_>,
     mod_id: &str,
     buttons: &mut Vec<String>,
 ) {
+    use crate::game::shulker_box_tooltip as m;
     if mod_id != m::ID {
         return;
     }

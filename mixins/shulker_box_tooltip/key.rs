@@ -1,10 +1,9 @@
-use crate::game::shulker_box_tooltip as m;
-
 fn shulker_box_tooltip_key(
     game: &mut crate::game::Game<'_>,
     key: &str,
     pressed: bool,
 ) {
+    use crate::game::shulker_box_tooltip as m;
     if !game.native_on(m::ID) {
         return;
     }
