@@ -1,0 +1,13 @@
+[package]
+name = "shulker_box_tooltip"
+version = "1.0.0"
+edition = "2024"
+publish = false
+
+[lib]
+path = "runtime.rs"
+
+[dependencies]
+horizon-client = { path = "../../../../crates/horizon-client" }
+horizon-core = { path = "../../../../crates/horizon-core" }
+horizon-world = { path = "../../../../crates/horizon-world" }

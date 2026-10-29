@@ -1,0 +1,56 @@
+use crate::game::shulker_box_tooltip as m;
+
+pub fn shulker_box_tooltip_command(
+    game: &mut crate::game::Game<'_>,
+    command: &str,
+    ran: &mut bool,
+) {
+    let Some(args) = command.strip_prefix("shulkerpreview") else {
+        return;
+    };
+    if !args.is_empty() && !args.starts_with(' ') {
+        return;
+    }
+
+    if !game.native_on(m::ID) {
+        return;
+    }
+    *ran = true;
+
+    let player = match game.player.as_ref() {
+        Some(p) => p,
+        None => {
+            game.native_chat("Not in a world");
+            return;
+        }
+    };
+
+    let held = match player.inventory.get(game.selected) {
+        Some(s) => s,
+        None => {
+            game.native_chat("No item in hand");
+            return;
+        }
+    };
+
+    match m::extract_container_contents(held) {
+        Some(preview) => {
+            if preview.items.is_empty() {
+                game.native_chat(&format!("{} is empty", preview.title));
+            } else {
+                let count = preview.items.iter().filter(|i| i.is_some()).count();
+                let items: Vec<String> = preview.items.iter()
+                    .filter_map(|i| i.as_ref())
+                    .map(|i| {
+                        let name = i.item_id.strip_prefix("minecraft:").unwrap_or(&i.item_id);
+                        if i.count > 1 { format!("{} x{}", name, i.count) } else { name.to_string() }
+                    })
+                    .collect();
+                game.native_chat(&format!("{}: {} - [{}]", preview.title, count, items.join(", ")));
+            }
+        }
+        None => {
+            game.native_chat(&format!("{} is not a container", held.item));
+        }
+    }
+}

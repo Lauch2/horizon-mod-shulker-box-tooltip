@@ -1,0 +1,10 @@
+[package]
+name = "horizon-mod-shulker-box-tooltip"
+version = "1.0.0"
+edition = "2024"
+license = "MIT"
+publish = false
+description = "ShulkerBoxTooltip for Horizon: preview shulker boxes and containers in a corner HUD."
+
+[lib]
+path = "mixins/shulker_box_tooltip/runtime.rs"
