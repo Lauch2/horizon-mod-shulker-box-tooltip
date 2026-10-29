@@ -1,6 +1,6 @@
 use crate::game::shulker_box_tooltip as m;
 
-pub fn shulker_box_tooltip_listed(
+fn shulker_box_tooltip_listed(
     mods: &mut Vec<crate::game::native_hooks::NativeMod>,
 ) {
     mods.push(crate::game::native_hooks::NativeMod {

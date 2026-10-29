@@ -1,6 +1,6 @@
 use crate::game::shulker_box_tooltip as m;
 
-pub fn shulker_box_tooltip_settings(
+fn shulker_box_tooltip_settings(
     game: &mut crate::game::Game<'_>,
     mod_id: &str,
     buttons: &mut Vec<String>,

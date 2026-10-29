@@ -1,6 +1,6 @@
 use crate::game::shulker_box_tooltip as m;
 
-pub fn shulker_box_tooltip_command(
+fn shulker_box_tooltip_command(
     game: &mut crate::game::Game<'_>,
     command: &str,
     ran: &mut bool,

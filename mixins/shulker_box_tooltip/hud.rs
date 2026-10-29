@@ -2,16 +2,14 @@ use crate::game::shulker_box_tooltip as m;
 use horizon_client::extras::Corner;
 use horizon_client::extras_hud::Corners;
 
-fn corner_from_index(idx: usize) -> Corner {
-    match idx {
-        0 => Corner::TopLeft,
-        1 => Corner::TopRight,
-        2 => Corner::BottomLeft,
-        _ => Corner::BottomRight,
-    }
-}
+const CORNERS: [Corner; 4] = [
+    Corner::TopLeft,
+    Corner::TopRight,
+    Corner::BottomLeft,
+    Corner::BottomRight,
+];
 
-pub fn shulker_box_tooltip_hud(
+fn shulker_box_tooltip_hud(
     game: &mut crate::game::Game<'_>,
     batch: &mut horizon_client::hud::HudBatch,
     corners: &mut Corners,
@@ -58,7 +56,7 @@ pub fn shulker_box_tooltip_hud(
 
     m::PREVIEW_STATE.with(|s| s.set(Some(preview.clone())));
 
-    let corner = corner_from_index(settings.corner);
+    let corner = CORNERS[settings.corner.min(3)];
     if !game.native_corner_shown(corner) {
         return;
     }
@@ -71,7 +69,7 @@ pub fn shulker_box_tooltip_hud(
     let title_text = format!("{} ({} slots)", preview.title, preview.items.len());
     let title_w = game.native_text_width(&title_text) + 4.0;
     game.native_fill(batch, [x, y, title_w, 14.0], preview.color);
-    game.native_text(batch, &title_text, [x + 2.0, y + 2.0], INK, true);
+    game.native_text(batch, &title_text, [x + 2.0, y + 2.0], m::INK, true);
 
     let mut slot_idx = 0;
     let start_y = y + 16.0;
@@ -97,7 +95,7 @@ pub fn shulker_box_tooltip_hud(
             let text_w = game.native_text_width(&display);
             let tx = sx + (m::SLOT_SIZE - text_w) / 2.0;
             let ty = sy + (m::SLOT_SIZE - 10.0) / 2.0;
-            game.native_text(batch, &display, [tx, ty], INK, true);
+            game.native_text(batch, &display, [tx, ty], m::INK, true);
         }
 
         slot_idx += 1;

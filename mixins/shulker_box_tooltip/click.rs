@@ -1,6 +1,6 @@
 use crate::game::shulker_box_tooltip as m;
 
-pub fn shulker_box_tooltip_click(
+fn shulker_box_tooltip_click(
     game: &mut crate::game::Game<'_>,
     mod_id: &str,
     button: usize,

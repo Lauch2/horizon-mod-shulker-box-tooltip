@@ -7,11 +7,11 @@ pub const NAME: &str = "ShulkerBoxTooltip";
 pub const VERSION: &str = "1.0.0";
 pub const DESCRIPTION: &str = "Preview shulker boxes and containers in a corner HUD. Press the preview key (default Shift) while holding a container.";
 
-const BACKGROUND: u32 = 0x7800_0000;
-const INK: u32 = 0xFF_FFFF;
+pub const BACKGROUND: u32 = 0x7800_0000;
+pub const INK: u32 = 0xFF_FFFF;
 pub const SLOT_SIZE: f32 = 18.0;
-const SLOT_PADDING: f32 = 1.0;
-const MAX_COLS: usize = 9;
+pub const SLOT_PADDING: f32 = 1.0;
+pub const MAX_COLS: usize = 9;
 
 const CONTAINER_TYPES: &[(&str, usize, u32)] = &[
     ("minecraft:shulker_box", 27, 0xFF_404040),
