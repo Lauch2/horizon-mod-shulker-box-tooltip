@@ -2,7 +2,7 @@
 
 A native mod that shows previews of shulker boxes and other containers in a corner HUD when you hold the preview key (default: **Left Shift**) while holding a container. Also provides a `/shulkerpreview` command to print contents to chat.
 
-![Preview](docs/preview.gif)
+> **Note:** Screenshots/GIFs can be added to `docs/preview.gif` — contributions welcome!
 
 ---
 
@@ -216,6 +216,25 @@ This is a **partial port** of the Java [ShulkerBoxTooltip](https://github.com/Mi
 | Compact/full toggle via key combo | `native_tooltip` |
 
 A feature request for `native_tooltip` hook is in [`FEATURE_REQUEST.md`](FEATURE_REQUEST.md).
+
+---
+
+## Roadmap
+
+- [ ] **Full hover preview** — requires `native_tooltip` / `native_hovered_stack` hook (see [FEATURE_REQUEST.md](FEATURE_REQUEST.md))
+- [ ] **Item model rendering** — render actual item icons instead of text
+- [ ] **Lock preview** — separate key to pin preview window
+- [ ] **Compact/full toggle** — key combo to switch between modes
+- [ ] **More container support** — bundles with nested items, decorated pot patterns
+- [ ] **Configuration file** — TOML config for advanced users
+
+---
+
+## Acknowledgments
+
+- **MisterPeModder** — Original [ShulkerBoxTooltip](https://github.com/MisterPeModder/ShulkerBoxTooltip) Java mod for Fabric/Forge/NeoForge
+- **Horizon team** — Rust rewrite of Minecraft Java Edition and native mod system
+- **horizon-rust/horizon-mods** — Reference native mods (FPS Overlay, Minimap, Keystrokes, Zoom, Coords HUD)
 
 ---
 
