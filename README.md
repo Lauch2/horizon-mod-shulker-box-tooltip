@@ -1,74 +1,233 @@
 # ShulkerBoxTooltip for Horizon
 
-A native mod for the Horizon Minecraft client that shows previews of shulker boxes and other containers.
+A native mod that shows previews of shulker boxes and other containers in a corner HUD when you hold the preview key (default: **Left Shift**) while holding a container. Also provides a `/shulkerpreview` command to print contents to chat.
+
+![Preview](docs/preview.gif)
+
+---
 
 ## Features
 
-- **Corner HUD Preview**: Hold the preview key (default: Left Shift) while holding a container to see its contents in a corner of the screen
-- **Command Preview**: Use `/shulkerpreview` to print the held item's contents to chat
-- **Configurable**: Settings page in Options > Mods > ShulkerBoxTooltip
-  - Corner position (Top Left, Top Right, Bottom Left, Bottom Right)
-  - Show/hide key hints
-  - Compact mode (hide empty slots)
+| Feature | Description |
+|---------|-------------|
+| **Corner HUD Preview** | Hold preview key while holding a container → contents shown in configurable screen corner |
+| **Command Preview** | `/shulkerpreview` prints held item contents to chat |
+| **Settings UI** | Options → Mods → ShulkerBoxTooltip → Settings |
+| **16 Container Types** | Shulker boxes (all 16 colors), chests, barrels, ender chests, bundles, furnaces, hoppers, dispensers, droppers, brewing stands, chiseled bookshelves, decorated pots, lecterns |
+| **Dyed Colors** | Shulker box window color matches the dye |
+| **Compact Mode** | Hide empty slots in preview |
 
-## Supported Containers
-
-- Shulker Boxes (all 16 colors)
-- Chests (normal, trapped)
-- Barrels
-- Ender Chests
-- Bundles (all colors)
-- Furnaces (normal, blast, smoker)
-- Hoppers
-- Dispensers & Droppers
-- Brewing Stands
-- Chiseled Bookshelves
-- Decorated Pots
-- Lecterns
+---
 
 ## Installation
 
-1. Copy the `shulker-box-tooltip` folder to your `horizon-mods/native/` directory
-2. Run the Horizon launcher
-3. Go to Mods → ShulkerBoxTooltip → Install
-4. Go to Settings → Game → Native mods (experimental) → Build
-5. Select "Native mods" instance and play
+### Prerequisites
+- Horizon launcher installed (from [playhorizon.dev](https://playhorizon.dev))
+- Minecraft Java Edition 26.3 (owned, launcher prepares automatically)
+- Native mods enabled in Horizon Settings → Game → Native mods (experimental)
+
+### Quick Install
+
+```bash
+# Clone the repo
+git clone https://github.com/Lauch2/horizon-mod-shulker-box-tooltip.git
+
+# Copy to Horizon native mods folder
+mkdir -p ~/.local/share/horizon/mods/native
+cp -r horizon-mod-shulker-box-tooltip ~/.local/share/horizon/mods/native/
+```
+
+### Via Horizon Launcher
+1. Open Horizon launcher
+2. Go to **Mods** tab
+3. Find **ShulkerBoxTooltip** → click **Install**
+4. Go to **Settings** → **Game** → **Native mods (experimental)** → toggle **ON**
+5. Click **Build** → read warning → click **"I trust these mods: build"**
+6. Wait 20–30 minutes (first build downloads Rust and compiles Horizon)
+7. Select **"Native mods"** instance and click **Play**
+
+---
 
 ## Usage
 
-- **Hold Shift** (or configured key) while holding a container to show preview in corner HUD
-- **Release key** to close preview
-- **`/shulkerpreview`** in chat to see held item contents
-- **Options > Mods > ShulkerBoxTooltip > Settings** to configure
+| Action | Key / Command |
+|--------|---------------|
+| Show preview | Hold **Left Shift** (default) while holding a container |
+| Hide preview | Release the key |
+| Chat preview | `/shulkerpreview` |
+| Configure | Options → Mods → ShulkerBoxTooltip → Settings |
+
+### Settings
+
+| Setting | Options | Default |
+|---------|---------|---------|
+| Corner | Top Left, Top Right, Bottom Left, Bottom Right | Top Right |
+| Key Hints | ON / OFF | ON |
+| Compact Mode | ON / OFF | OFF |
+
+---
+
+## Supported Containers
+
+| Container | Slots | Preview Color |
+|-----------|-------|---------------|
+| Shulker Box (all 16 colors) | 27 | Matches dye |
+| Chest / Trapped Chest | 27 | Brown |
+| Barrel | 27 | Brown |
+| Ender Chest | 27 | Purple |
+| Bundle (all colors) | 64 | Orange |
+| Furnace / Blast Furnace / Smoker | 3 | Gray |
+| Hopper | 5 | Gray |
+| Dispenser / Dropper | 9 | Gray |
+| Brewing Stand | 5 | Gray |
+| Chiseled Bookshelf | 6 | Brown |
+| Decorated Pot | 5 | Tan |
+| Lectern | 1 | Brown |
+
+---
+
+## AI Agent Integration (MCP)
+
+Horizon includes a built-in MCP server for AI agents (Claude Code, Codex, Cursor, etc.).
+
+### Connect Your Agent
+
+**Claude Code:**
+```bash
+claude mcp add --scope user horizon -- /path/to/horizon-launcher mcp
+```
+
+**Codex:**
+```bash
+codex mcp add horizon -- /path/to/horizon-launcher mcp
+```
+
+**Cursor / Claude Desktop / Any MCP Client:**
+```json
+{
+  "mcpServers": {
+    "horizon": {
+      "command": "/path/to/horizon-launcher",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+### Agent Capabilities with This Mod
+
+| Task | MCP Tools |
+|------|-----------|
+| Start game with mod | `horizon-ctl launch --world "My World"` |
+| Check mod loaded | `horizon-ctl state` → check mods list |
+| Test preview | `horizon-ctl chat "/shulkerpreview"` |
+| Read HUD preview | `horizon-ctl ui` → find corner HUD widgets |
+| Screenshot preview | `horizon-ctl screenshot preview.png` |
+
+### Example Agent Workflow
+
+```python
+# Agent script to test the mod
+async def test_shulkerbox_tooltip(agent):
+    # 1. Start game
+    await agent.game_launch(world="Test World")
+    await agent.game_wait_ready()
+    
+    # 2. Give player a shulker box with items
+    await agent.game_give("shulker_box")
+    await agent.game_command("item replace inventory.0 with shulker_box{BlockEntityTag:{Items:[{Slot:0b,id:\"diamond\",Count:64}]}}")
+    
+    # 3. Hold preview key
+    await agent.game_key("key.keyboard.left.shift", "down")
+    await agent.game_wait(10)  # let preview render
+    
+    # 4. Read UI for preview window
+    ui = await agent.game_ui()
+    preview_widgets = [w for w in ui if "shulker" in w.label.lower() or "preview" in w.label.lower()]
+    
+    # 5. Screenshot
+    await agent.game_screenshot("shulker_preview.png")
+    
+    # 6. Release key
+    await agent.game_key("key.keyboard.left.shift", "up")
+```
+
+---
+
+## Development
+
+### Project Structure
+
+```
+shulker-box-tooltip/
+├── Cargo.toml                    # Workspace root
+├── compatibility.json            # API version + Horizon revision
+├── README.md                     # This file
+├── FEATURE_REQUEST.md            # Upstream hook request
+├── LICENSE                       # MIT
+└── mixins/shulker_box_tooltip/
+    ├── Cargo.toml                # Library config
+    ├── horizon-mixin.toml        # 6 injections (hud, key, command, list, settings, click)
+    ├── runtime.rs                # Core logic, container parsing, settings
+    ├── hud.rs                    # Corner HUD preview rendering
+    ├── key.rs                    # Preview key tracking
+    ├── command.rs                # /shulkerpreview command
+    ├── list.rs                   # Mods page registration
+    ├── settings.rs               # Settings UI rendering
+    └── click.rs                  # Settings click handling
+```
+
+### Building from Source
+
+Requires Horizon source tree (for `horizon-client`, `horizon-core`, `horizon-world` dependencies).
+
+```bash
+cd shulker-box-tooltip
+cargo check --lib
+
+# Or use Horizon mod tools
+python3 ../native/tools/native.py check shulker-box-tooltip
+python3 ../native/tools/native.py package shulker-box-tooltip
+```
+
+### Hook Points Used
+
+| Hook | Target | Purpose |
+|------|--------|---------|
+| `native_hud` | `Game::native_hud` | Draw corner preview window |
+| `native_key` | `Game::native_key` | Track preview key (Shift) state |
+| `native_command` | `Game::native_command` | Handle `/shulkerpreview` |
+| `native_mods` | `Game::native_mods` | Register in Mods page |
+| `native_settings` | `Game::native_settings` | Render settings buttons |
+| `native_settings_click` | `Game::native_settings_click` | Handle settings clicks |
+
+---
 
 ## Limitations
 
-This is a partial port of the Java [ShulkerBoxTooltip](https://github.com/MisterPeModder/ShulkerBoxTooltip) mod. Due to missing native hook points in Horizon's API, the following features are not available:
+This is a **partial port** of the Java [ShulkerBoxTooltip](https://github.com/MisterPeModder/ShulkerBoxTooltip) mod. Due to missing native hook points in Horizon's API v1/v2:
 
-- ❌ True hover preview (only works on held item)
-- ❌ Preview rendered adjacent to tooltip
-- ❌ Full item model rendering (text-only)
-- ❌ Lock preview with separate key
-- ❌ Compact/full toggle via key combo
+| Missing Feature | Required Hook |
+|-----------------|---------------|
+| True hover preview (inventory hover) | `native_tooltip` / `native_hovered_stack` |
+| Preview adjacent to tooltip | `native_tooltip` |
+| Full item model rendering | `native_tooltip` + item render API |
+| Lock preview (separate key) | `native_tooltip` + key combos |
+| Compact/full toggle via key combo | `native_tooltip` |
 
-A feature request for the required `native_tooltip` hook has been filed (see `FEATURE_REQUEST.md`).
+A feature request for `native_tooltip` hook is in [`FEATURE_REQUEST.md`](FEATURE_REQUEST.md).
 
-## Building from Source
-
-Requires Horizon's source tree (for `horizon-client`, `horizon-core`, `horizon-world` dependencies).
-
-```bash
-cd horizon-mods/native/shulker-box-tooltip
-cargo check --lib
-```
-
-Or use the Horizon mod tools:
-
-```bash
-python3 native/tools/native.py check shulker-box-tooltip
-python3 native/tools/native.py package shulker-box-tooltip
-```
+---
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE)
+
+---
+
+## Links
+
+- **Repository**: https://github.com/Lauch2/horizon-mod-shulker-box-tooltip
+- **Horizon Docs**: https://playhorizon.dev/docs/make-a-mod
+- **Original Java Mod**: https://github.com/MisterPeModder/ShulkerBoxTooltip
+- **Horizon MCP/Agent Control**: https://playhorizon.dev/docs/agents
