@@ -31,24 +31,12 @@ fn shulker_box_tooltip_hud(
         return;
     }
 
-    let held_stack = match game.inventory.get(game.selected).and_then(|s| s.as_ref()) {
-        Some(s) => s,
-        None => {
-            // TEMP DEBUG.
-            if m::debug_hud() {
-                game.native_chat("[SBT] hud: no container in hand");
-            }
-            return;
-        }
-    };
-
-    let preview = match m::extract_container_contents(held_stack) {
+    let preview = match m::server_pull() {
         Some(p) => p,
         None => {
-            // TEMP DEBUG: why extraction failed.
+            // TEMP DEBUG: the server-side game has no container in hand.
             if m::debug_hud() {
-                let why = m::extract_debug(held_stack);
-                game.native_chat(&format!("[SBT] hud: not a container ({why})"));
+                game.native_chat("[SBT] hud: server has no container in hand");
             }
             m::set_preview_state(None);
             return;

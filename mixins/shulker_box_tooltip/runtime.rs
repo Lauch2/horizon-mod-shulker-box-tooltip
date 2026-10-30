@@ -1,4 +1,5 @@
 use std::cell::{Cell, RefCell};
+use std::sync::Mutex;
 use horizon_client::items::ItemStack;
 use horizon_world::nbt::{Compound, JavaString, Tag};
 
@@ -88,6 +89,24 @@ thread_local! {
     static PREVIEW_FORCED: Cell<bool> = const { Cell::new(false) };
     static DEBUG_TICK: Cell<u32> = const { Cell::new(0) };
     static DEBUG_HUD: Cell<u32> = const { Cell::new(0) };
+}
+
+/// Shared between the window's game (HUD, command) and, in single player, the
+/// server's game thread, where the authoritative inventory lives. The client
+/// sync does not carry `minecraft:container`, so the server extracts the
+/// preview and the window reads it.
+static SHARED: Mutex<Option<PreviewState>> = Mutex::new(None);
+
+/// The server-side game pushes the preview of the held stack here.
+pub fn server_push(preview: Option<PreviewState>) {
+    if let Ok(mut g) = SHARED.lock() {
+        *g = preview;
+    }
+}
+
+/// The window-side game reads the server's preview.
+pub fn server_pull() -> Option<PreviewState> {
+    SHARED.lock().ok().and_then(|g| g.clone())
 }
 
 /// TEMP DEBUG: true every 100 calls (tick debug, ~5 s).

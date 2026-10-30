@@ -26,15 +26,17 @@ fn shulker_box_tooltip_command(
         return;
     }
 
-    let held = match game.inventory.get(game.selected).and_then(|s| s.as_ref()) {
-        Some(s) => s,
-        None => {
-            game.native_chat("No item in hand");
-            return;
-        }
-    };
+    // Raw client-side reason (the client sync does not carry container data).
+    let client_why = game
+        .inventory
+        .get(game.selected)
+        .and_then(|s| s.as_ref())
+        .map(|s| m::extract_debug(s))
+        .unwrap_or_else(|| "no item in hand".to_owned());
 
-    match m::extract_container_contents(held) {
+    // The preview itself comes from the server-side game (single player), where
+    // the authoritative inventory lives.
+    match m::server_pull() {
         Some(preview) => {
             if preview.items.is_empty() {
                 game.native_chat(&format!("{} is empty", preview.title));
@@ -51,8 +53,7 @@ fn shulker_box_tooltip_command(
             }
         }
         None => {
-            let why = m::extract_debug(held);
-            game.native_chat(&format!("{} is not a container ({why})", held.item));
+            game.native_chat(&format!("No container in hand ({client_why})"));
         }
     }
 }
