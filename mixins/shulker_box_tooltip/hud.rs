@@ -43,11 +43,12 @@ fn shulker_box_tooltip_hud(
     };
 
     let preview = match m::extract_container_contents(held_stack) {
-        Some(p) if !p.items.is_empty() => p,
-        _ => {
-            // TEMP DEBUG.
+        Some(p) => p,
+        None => {
+            // TEMP DEBUG: why extraction failed.
             if m::debug_hud() {
-                game.native_chat("[SBT] hud: item is not a container");
+                let why = m::extract_debug(held_stack);
+                game.native_chat(&format!("[SBT] hud: not a container ({why})"));
             }
             m::set_preview_state(None);
             return;
@@ -80,8 +81,13 @@ fn shulker_box_tooltip_hud(
     game.native_fill(batch, [x, y, title_w, 14.0], preview.color);
     game.native_text(batch, &title_text, [x + 2.0, y + 2.0], m::INK, true);
 
-    let mut slot_idx = 0;
     let start_y = y + 16.0;
+
+    if preview.items.is_empty() {
+        game.native_text(batch, "Empty", [x + 2.0, start_y + 2.0], m::INK, true);
+    }
+
+    let mut slot_idx = 0;
 
     for item_opt in &preview.items {
         if settings.compact_mode && item_opt.is_none() {

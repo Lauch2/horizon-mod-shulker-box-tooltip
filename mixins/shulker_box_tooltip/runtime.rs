@@ -209,18 +209,17 @@ pub fn extract_container_contents(stack: &ItemStack) -> Option<PreviewState> {
     let data = stack.data()?;
     let mut slots: Vec<Option<ItemStackPreview>> = Vec::with_capacity(max_slots.min(64));
 
-    if !data.container.is_empty() {
-        for (slot, inner) in &data.container {
-            let s = usize::from(*slot);
-            while slots.len() <= s {
-                slots.push(None);
-            }
-            slots[s] = Some(ItemStackPreview {
-                item_id: inner.item.to_string(),
-                count: inner.count,
-            });
+    for (slot, inner) in &data.container {
+        let s = usize::from(*slot);
+        while slots.len() <= s {
+            slots.push(None);
         }
-    } else if !data.bundle_contents.is_empty() {
+        slots[s] = Some(ItemStackPreview {
+            item_id: inner.item.to_string(),
+            count: inner.count,
+        });
+    }
+    if slots.is_empty() {
         for (i, inner) in data.bundle_contents.iter().enumerate() {
             while slots.len() <= i {
                 slots.push(None);
@@ -230,15 +229,10 @@ pub fn extract_container_contents(stack: &ItemStack) -> Option<PreviewState> {
                 count: inner.count,
             });
         }
-    } else {
-        return None;
     }
 
     while slots.last().is_some_and(|s| s.is_none()) {
         slots.pop();
-    }
-    if slots.is_empty() {
-        return None;
     }
 
     Some(PreviewState {
@@ -246,6 +240,16 @@ pub fn extract_container_contents(stack: &ItemStack) -> Option<PreviewState> {
         title: title.to_string(),
         color,
     })
+}
+
+/// TEMP DEBUG: why extraction failed for a stack, as a short label.
+pub fn extract_debug(stack: &ItemStack) -> String {
+    let id = &*stack.item;
+    let data = stack.data().is_some();
+    let container_len = stack
+        .data()
+        .map_or(0, |d| d.container.len());
+    format!("id={id} data={data} container_slots={container_len}")
 }
 
 #[cfg(test)]
