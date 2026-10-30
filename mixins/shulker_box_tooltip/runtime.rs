@@ -1,6 +1,6 @@
 use std::cell::{Cell, RefCell};
 use horizon_client::items::ItemStack;
-use horizon_world::nbt::Tag;
+use horizon_world::nbt::{Compound, JavaString, Tag};
 
 pub const ID: &str = "shulker_box_tooltip";
 pub const NAME: &str = "ShulkerBoxTooltip";
@@ -176,6 +176,11 @@ pub fn preview_key(game: &crate::game::Game<'_>) -> String {
     game.native_mod_key(ID, "preview", "key.keyboard.left.shift")
 }
 
+/// Get a key from a compound map (`BTreeMap<JavaString, Tag>`) by `&str`.
+fn compound_get<'a>(map: &'a Compound, key: &str) -> Option<&'a Tag> {
+    map.get(&JavaString::from(key))
+}
+
 pub fn extract_container_contents(stack: &ItemStack) -> Option<PreviewState> {
     let (title, max_slots, color) = match &*stack.item {
         "minecraft:shulker_box" => ("Shulker Box", 27, 0xFF_404040),
@@ -236,19 +241,19 @@ pub fn extract_container_contents(stack: &ItemStack) -> Option<PreviewState> {
     if slots.is_empty()
         && let Some(tag) = data.other("minecraft:block_entity_data")
         && let Tag::Compound(be) = tag
-        && let Some(Tag::List(items)) = be.get("Items")
+        && let Some(Tag::List(items)) = compound_get(be, "Items")
     {
         for item in items {
             let Tag::Compound(ic) = item else { continue };
-            let Some(Tag::String(id)) = ic.get("id") else { continue };
+            let Some(Tag::String(id)) = compound_get(ic, "id") else { continue };
             if id.to_string_lossy() == "minecraft:air" {
                 continue;
             }
-            let count = match ic.get("Count") {
+            let count = match compound_get(ic, "Count") {
                 Some(Tag::Byte(b)) => u32::try_from(*b).unwrap_or(1),
                 _ => 1,
             };
-            let slot = match ic.get("Slot") {
+            let slot = match compound_get(ic, "Slot") {
                 Some(Tag::Byte(b)) => usize::try_from(*b).unwrap_or(0),
                 _ => 0,
             };
