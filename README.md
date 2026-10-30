@@ -6,6 +6,59 @@ A native mod that shows previews of shulker boxes and other containers in a corn
 
 ---
 
+## ⚠️ Current Status (2026-10-29)
+
+**Repo is PRIVATE** (only the owner can see it). Work in progress — not yet release-ready.
+
+| Area | Status |
+|------|--------|
+| Mod compiles & builds in Horizon launcher | ✅ (`native-build` läuft durch) |
+| Mod listed in Options → Mods (switch active) | ✅ |
+| All hooks fire: `native_tick`, `native_key`, `native_hud`, `native_command` | ✅ (per chat debug output) |
+| Shift-key detection (`key.keyboard.left.shift`) | ✅ (`[SBT] key down/up` in chat) |
+| `/shulkerpreview` command handler | ✅ (`[SBT] command: ...` in chat) |
+| Corner HUD drawing code | ✅ (ready) |
+| **Container content extraction** | ❌ **OPEN ISSUE** — a held shulker box is not recognized as a container |
+
+### The open bug: extraction returns `data=false`
+
+`extract_container_contents()` reads `stack.data()?.container` / `bundle_contents` / `block_entity_data`. In testing, a held shulker box reports:
+
+```
+id=minecraft:shulker_box data=false container_slots=0 other=[]
+```
+
+`data=false` means the item has **no `StackData` at all** (no components). This happens for items from the **creative inventory** or `/give` without NBT. A shulker box that was **mined in survival** (place → fill → break → pick up) should carry `minecraft:container` in `StackData.container` — that path has not yet been confirmed working.
+
+**Next step:** test with a survival-mined filled shulker box and report the full debug line:
+```
+[SBT] hud: not a container (id=… data=… container_slots=… other=[…])
+```
+or via `/shulkerpreview`:
+```
+minecraft:shulker_box is not a container (id=… data=… container_slots=… other=[…])
+```
+
+### Temporary debug output (to be removed before release)
+
+While diagnosing, the mod prints chat lines:
+- `[SBT] tick` — every ~5 s while in a world (proves `native_tick` runs)
+- `[SBT] key down/up` — preview key press/release (proves `native_key` runs)
+- `[SBT] command: /…` — every typed command (proves `native_command` runs)
+- `[SBT] hud: …` — HUD diagnostics every ~5 s while Shift is held
+- `[SBT] preview shown` — once when a preview appears
+
+These will be removed once extraction works.
+
+### Useful commands during testing
+
+```bash
+/shulkerpreview          # print held item contents to chat (+ debug reason)
+/shulkerpreview force    # toggle corner preview without holding Shift
+```
+
+---
+
 ## Features
 
 | Feature | Description |
@@ -167,8 +220,9 @@ shulker-box-tooltip/
 ├── LICENSE                       # MIT
 └── mixins/shulker_box_tooltip/
     ├── Cargo.toml                # Library config
-    ├── horizon-mixin.toml        # 6 injections (hud, key, command, list, settings, click)
+    ├── horizon-mixin.toml        # 7 injections (tick, hud, key, command, list, settings, click)
     ├── runtime.rs                # Core logic, container parsing, settings
+    ├── tick.rs                   # Tick hook (debug heartbeat)
     ├── hud.rs                    # Corner HUD preview rendering
     ├── key.rs                    # Preview key tracking
     ├── command.rs                # /shulkerpreview command
@@ -194,6 +248,7 @@ python3 ../native/tools/native.py package shulker-box-tooltip
 
 | Hook | Target | Purpose |
 |------|--------|---------|
+| `native_tick` | `Game::native_tick` | Debug heartbeat (to be removed) |
 | `native_hud` | `Game::native_hud` | Draw corner preview window |
 | `native_key` | `Game::native_key` | Track preview key (Shift) state |
 | `native_command` | `Game::native_command` | Handle `/shulkerpreview` |
