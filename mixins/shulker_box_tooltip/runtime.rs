@@ -85,6 +85,26 @@ thread_local! {
     static PREVIEW_STATE: RefCell<Option<PreviewState>> = const { RefCell::new(None) };
     static PREVIEW_KEY_PRESSED: Cell<bool> = const { Cell::new(false) };
     static PREVIEW_FORCED: Cell<bool> = const { Cell::new(false) };
+    static DEBUG_TICK: Cell<u32> = const { Cell::new(0) };
+    static DEBUG_HUD: Cell<u32> = const { Cell::new(0) };
+}
+
+/// TEMP DEBUG: true every 100 calls (tick debug, ~5 s).
+pub fn debug_tick() -> bool {
+    DEBUG_TICK.with(|c| {
+        let n = c.get().wrapping_add(1);
+        c.set(n);
+        n % 100 == 0
+    })
+}
+
+/// TEMP DEBUG: true every 100 calls (hud debug).
+pub fn debug_hud() -> bool {
+    DEBUG_HUD.with(|c| {
+        let n = c.get().wrapping_add(1);
+        c.set(n);
+        n % 100 == 0
+    })
 }
 
 pub fn settings(get: impl Fn(&str) -> Option<String>) -> Settings {

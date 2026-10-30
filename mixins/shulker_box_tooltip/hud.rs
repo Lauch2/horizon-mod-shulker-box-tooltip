@@ -33,12 +33,22 @@ fn shulker_box_tooltip_hud(
 
     let held_stack = match game.inventory.get(game.selected).and_then(|s| s.as_ref()) {
         Some(s) => s,
-        None => return,
+        None => {
+            // TEMP DEBUG.
+            if m::debug_hud() {
+                game.native_chat("[SBT] hud: no container in hand");
+            }
+            return;
+        }
     };
 
     let preview = match m::extract_container_contents(held_stack) {
         Some(p) if !p.items.is_empty() => p,
         _ => {
+            // TEMP DEBUG.
+            if m::debug_hud() {
+                game.native_chat("[SBT] hud: item is not a container");
+            }
             m::set_preview_state(None);
             return;
         }
