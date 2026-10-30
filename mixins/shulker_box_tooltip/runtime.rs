@@ -1,4 +1,4 @@
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use horizon_client::items::ItemStack;
 
 pub const ID: &str = "shulker_box_tooltip";
@@ -82,7 +82,7 @@ impl Settings {
 
 thread_local! {
     static SETTINGS: Cell<Option<Settings>> = const { Cell::new(None) };
-    static PREVIEW_STATE: Cell<Option<PreviewState>> = const { Cell::new(None) };
+    static PREVIEW_STATE: RefCell<Option<PreviewState>> = const { RefCell::new(None) };
     static PREVIEW_KEY_PRESSED: Cell<bool> = const { Cell::new(false) };
 }
 
@@ -99,11 +99,11 @@ pub fn set_settings(new: Settings) {
 }
 
 pub fn preview_state() -> Option<PreviewState> {
-    PREVIEW_STATE.with(|s| s.get().clone())
+    PREVIEW_STATE.with(|s| s.borrow().clone())
 }
 
 pub fn set_preview_state(v: Option<PreviewState>) {
-    PREVIEW_STATE.with(|s| s.set(v));
+    PREVIEW_STATE.with(|s| *s.borrow_mut() = v);
 }
 
 pub fn preview_key_pressed() -> bool {
