@@ -19,7 +19,12 @@ fn shulker_box_tooltip_hud(
         m::settings(|key| game.native_setting(m::ID, key))
     };
 
-    let pressed = m::preview_key_pressed();
+    // Preview key pressed (native_key events) or forced via /shulkerpreview force.
+    // Fallback: when the preview key is the default Left Shift, also accept the
+    // sneak mapping, in case key events are not delivered on some screens.
+    let shift = m::preview_key(&*game) == "key.keyboard.left.shift"
+        && game.native_mapping("key.sneak").map(|(d, _)| d).unwrap_or(false);
+    let pressed = m::preview_key_pressed() || shift || m::preview_forced();
 
     if !pressed {
         m::set_preview_state(None);

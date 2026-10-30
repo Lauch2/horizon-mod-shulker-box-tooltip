@@ -84,6 +84,7 @@ thread_local! {
     static SETTINGS: Cell<Option<Settings>> = const { Cell::new(None) };
     static PREVIEW_STATE: RefCell<Option<PreviewState>> = const { RefCell::new(None) };
     static PREVIEW_KEY_PRESSED: Cell<bool> = const { Cell::new(false) };
+    static PREVIEW_FORCED: Cell<bool> = const { Cell::new(false) };
 }
 
 pub fn settings(get: impl Fn(&str) -> Option<String>) -> Settings {
@@ -112,6 +113,14 @@ pub fn preview_key_pressed() -> bool {
 
 pub fn set_preview_key_pressed(v: bool) {
     PREVIEW_KEY_PRESSED.with(|s| s.set(v));
+}
+
+pub fn preview_forced() -> bool {
+    PREVIEW_FORCED.with(|s| s.get())
+}
+
+pub fn set_preview_forced(v: bool) {
+    PREVIEW_FORCED.with(|s| s.set(v));
 }
 
 #[derive(Clone, Debug)]

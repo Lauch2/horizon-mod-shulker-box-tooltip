@@ -16,6 +16,14 @@ fn shulker_box_tooltip_command(
     }
     *ran = true;
 
+    // /shulkerpreview force: toggle the corner preview without holding a key.
+    if args.trim() == "force" {
+        let on = !m::preview_forced();
+        m::set_preview_forced(on);
+        game.native_chat(&format!("Preview forced: {}", if on { "ON" } else { "OFF" }));
+        return;
+    }
+
     let held = match game.inventory.get(game.selected).and_then(|s| s.as_ref()) {
         Some(s) => s,
         None => {
