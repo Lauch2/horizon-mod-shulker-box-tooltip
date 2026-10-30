@@ -1,5 +1,6 @@
 use std::cell::{Cell, RefCell};
 use horizon_client::items::ItemStack;
+use horizon_world::nbt::Tag;
 
 pub const ID: &str = "shulker_box_tooltip";
 pub const NAME: &str = "ShulkerBoxTooltip";
@@ -231,6 +232,36 @@ pub fn extract_container_contents(stack: &ItemStack) -> Option<PreviewState> {
         }
     }
 
+    // Fallback: vanilla BlockEntityTag item list in minecraft:block_entity_data.
+    if slots.is_empty()
+        && let Some(tag) = data.other("minecraft:block_entity_data")
+        && let Tag::Compound(be) = tag
+        && let Some(Tag::List(items)) = be.get("Items")
+    {
+        for item in items {
+            let Tag::Compound(ic) = item else { continue };
+            let Some(Tag::String(id)) = ic.get("id") else { continue };
+            if id.to_string_lossy() == "minecraft:air" {
+                continue;
+            }
+            let count = match ic.get("Count") {
+                Some(Tag::Byte(b)) => u32::from(*b),
+                _ => 1,
+            };
+            let slot = match ic.get("Slot") {
+                Some(Tag::Byte(b)) => usize::from(*b),
+                _ => 0,
+            };
+            while slots.len() <= slot {
+                slots.push(None);
+            }
+            slots[slot] = Some(ItemStackPreview {
+                item_id: id.to_string_lossy().to_string(),
+                count,
+            });
+        }
+    }
+
     while slots.last().is_some_and(|s| s.is_none()) {
         slots.pop();
     }
@@ -246,10 +277,15 @@ pub fn extract_container_contents(stack: &ItemStack) -> Option<PreviewState> {
 pub fn extract_debug(stack: &ItemStack) -> String {
     let id = &*stack.item;
     let data = stack.data().is_some();
-    let container_len = stack
-        .data()
-        .map_or(0, |d| d.container.len());
-    format!("id={id} data={data} container_slots={container_len}")
+    let container_len = stack.data().map_or(0, |d| d.container.len());
+    let other_keys = stack.data().map_or_else(String::new, |d| {
+        d.other
+            .iter()
+            .map(|(k, _)| k.as_str())
+            .collect::<Vec<_>>()
+            .join(",")
+    });
+    format!("id={id} data={data} container_slots={container_len} other=[{other_keys}]")
 }
 
 #[cfg(test)]
