@@ -245,11 +245,11 @@ pub fn extract_container_contents(stack: &ItemStack) -> Option<PreviewState> {
                 continue;
             }
             let count = match ic.get("Count") {
-                Some(Tag::Byte(b)) => u32::from(*b),
+                Some(Tag::Byte(b)) => u32::try_from(*b).unwrap_or(1),
                 _ => 1,
             };
             let slot = match ic.get("Slot") {
-                Some(Tag::Byte(b)) => usize::from(*b),
+                Some(Tag::Byte(b)) => usize::try_from(*b).unwrap_or(0),
                 _ => 0,
             };
             while slots.len() <= slot {
