@@ -1,5 +1,6 @@
-use std::cell::{Cell, RefCell};
+use std::cell::Cell;
 use std::sync::Mutex;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use horizon_client::items::ItemStack;
 use horizon_world::nbt::{Compound, JavaString, Tag};
 
@@ -84,11 +85,8 @@ impl Settings {
 
 thread_local! {
     static SETTINGS: Cell<Option<Settings>> = const { Cell::new(None) };
-    static PREVIEW_STATE: RefCell<Option<PreviewState>> = const { RefCell::new(None) };
     static PREVIEW_KEY_PRESSED: Cell<bool> = const { Cell::new(false) };
     static PREVIEW_FORCED: Cell<bool> = const { Cell::new(false) };
-    static DEBUG_TICK: Cell<u32> = const { Cell::new(0) };
-    static DEBUG_HUD: Cell<u32> = const { Cell::new(0) };
 }
 
 /// Shared between the window's game (HUD, command) and, in single player, the
@@ -96,6 +94,20 @@ thread_local! {
 /// sync does not carry `minecraft:container`, so the server extracts the
 /// preview and the window reads it.
 static SHARED: Mutex<Option<PreviewState>> = Mutex::new(None);
+
+/// The selected hotbar slot, as the window's game sees it. The server game's
+/// own `selected` does not track the client's choice, so the window shares it.
+static SELECTED_SLOT: AtomicUsize = AtomicUsize::new(0);
+
+/// The window-side game records the selected hotbar slot.
+pub fn set_window_selected(slot: usize) {
+    SELECTED_SLOT.store(slot, Ordering::Relaxed);
+}
+
+/// The server-side game reads the window's selected hotbar slot.
+pub fn window_selected() -> usize {
+    SELECTED_SLOT.load(Ordering::Relaxed)
+}
 
 /// The server-side game pushes the preview of the held stack here.
 pub fn server_push(preview: Option<PreviewState>) {
@@ -109,24 +121,6 @@ pub fn server_pull() -> Option<PreviewState> {
     SHARED.lock().ok().and_then(|g| g.clone())
 }
 
-/// TEMP DEBUG: true every 100 calls (tick debug, ~5 s).
-pub fn debug_tick() -> bool {
-    DEBUG_TICK.with(|c| {
-        let n = c.get().wrapping_add(1);
-        c.set(n);
-        n % 100 == 0
-    })
-}
-
-/// TEMP DEBUG: true every 100 calls (hud debug).
-pub fn debug_hud() -> bool {
-    DEBUG_HUD.with(|c| {
-        let n = c.get().wrapping_add(1);
-        c.set(n);
-        n % 100 == 0
-    })
-}
-
 pub fn settings(get: impl Fn(&str) -> Option<String>) -> Settings {
     SETTINGS.with(|s| {
         let found = s.get().unwrap_or_else(|| Settings::read(get));
@@ -137,14 +131,6 @@ pub fn settings(get: impl Fn(&str) -> Option<String>) -> Settings {
 
 pub fn set_settings(new: Settings) {
     SETTINGS.with(|s| s.set(Some(new)));
-}
-
-pub fn preview_state() -> Option<PreviewState> {
-    PREVIEW_STATE.with(|s| s.borrow().clone())
-}
-
-pub fn set_preview_state(v: Option<PreviewState>) {
-    PREVIEW_STATE.with(|s| *s.borrow_mut() = v);
 }
 
 pub fn preview_key_pressed() -> bool {

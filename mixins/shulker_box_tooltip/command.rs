@@ -4,8 +4,6 @@ fn shulker_box_tooltip_command(
     ran: &mut bool,
 ) {
     use crate::game::shulker_box_tooltip as m;
-    // TEMP DEBUG: proves the hook receives the command.
-    game.native_chat(&format!("[SBT] command: /{command}"));
     let Some(args) = command.strip_prefix("shulkerpreview") else {
         return;
     };

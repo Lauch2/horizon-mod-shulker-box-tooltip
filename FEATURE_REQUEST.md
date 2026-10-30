@@ -66,6 +66,24 @@ Also add a helper to get the currently hovered stack:
 pub(super) fn native_hovered_stack(&self) -> Option<&ItemStack>;
 ```
 
+## Additional Request: Item Icon Rendering Helper
+
+The corner-HUD preview currently renders item names as **text** because the native API only exposes `native_fill` and `native_text`. To draw real item icons/grids (like the Java mod), add a helper:
+
+```rust
+/// Draw a stack's GUI icon at (x, y) into the HUD batch (16x16 pixels),
+/// with its count/decorations, like the hotbar renders it.
+pub(super) fn native_item(
+    &self,
+    batch: &mut HudBatch,
+    stack: &ItemStack,
+    x: f32,
+    y: f32,
+);
+```
+
+This would let native mods draw item grids (shulker previews, inventory viewers, recipe grids) without reimplementing the item model pipeline.
+
 ## Current Workaround
 A partial port exists using available hooks:
 - **Corner HUD preview** (`native_hud` + `native_key`): Shows held item contents in a screen corner when preview key (default Shift) is pressed

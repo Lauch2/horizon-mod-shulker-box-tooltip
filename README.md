@@ -6,54 +6,32 @@ A native mod that shows previews of shulker boxes and other containers in a corn
 
 ---
 
-## ⚠️ Current Status (2026-10-29)
+## ✅ Current Status (2026-10-30)
 
-**Repo is PRIVATE** (only the owner can see it). Work in progress — not yet release-ready.
+**Working preview:** hold the preview key (default Left Shift) with a container in hand → its contents appear in the chosen corner HUD window.
 
 | Area | Status |
 |------|--------|
-| Mod compiles & builds in Horizon launcher | ✅ (`native-build` läuft durch) |
-| Mod listed in Options → Mods (switch active) | ✅ |
-| All hooks fire: `native_tick`, `native_key`, `native_hud`, `native_command` | ✅ (per chat debug output) |
-| Shift-key detection (`key.keyboard.left.shift`) | ✅ (`[SBT] key down/up` in chat) |
-| `/shulkerpreview` command handler | ✅ (`[SBT] command: ...` in chat) |
-| Corner HUD drawing code | ✅ (ready) |
-| **Container content extraction** | ❌ **OPEN ISSUE** — a held shulker box is not recognized as a container |
+| Mod compiles & builds in Horizon launcher | ✅ |
+| Mod listed in Options → Mods (switch) | ✅ |
+| Container extraction (survival-mined shulker boxes etc.) | ✅ |
+| Corner HUD preview window | ✅ |
+| Preview follows slot changes / clearing the hand | ✅ (window shares the selected slot with the server game) |
+| `/shulkerpreview` chat output | ✅ |
+| `/shulkerpreview force` toggle | ✅ |
+| Settings (corner, key hints, compact mode) | ✅ |
+| **Item icons in the preview** | ❌ text-only — needs `native_item` helper (see FEATURE_REQUEST.md) |
+| **True hover preview** (Java parity) | ❌ needs `native_tooltip` hook (see FEATURE_REQUEST.md) |
 
-### The open bug: extraction returns `data=false`
+### Notes
 
-`extract_container_contents()` reads `stack.data()?.container` / `bundle_contents` / `block_entity_data`. In testing, a held shulker box reports:
+- **Single-player sync:** the client inventory sync does not carry `minecraft:container`, so the mod reads the held stack from the server-side game (same process, separate thread) and shares it with the HUD via a `Mutex`. This is why the preview only works in single player for now.
+- **Items show as text** (e.g. `diamond x64`) because the native API only exposes `native_fill`/`native_text`. Real icons need `native_item` (requested upstream).
 
-```
-id=minecraft:shulker_box data=false container_slots=0 other=[]
-```
-
-`data=false` means the item has **no `StackData` at all** (no components). This happens for items from the **creative inventory** or `/give` without NBT. A shulker box that was **mined in survival** (place → fill → break → pick up) should carry `minecraft:container` in `StackData.container` — that path has not yet been confirmed working.
-
-**Next step:** test with a survival-mined filled shulker box and report the full debug line:
-```
-[SBT] hud: not a container (id=… data=… container_slots=… other=[…])
-```
-or via `/shulkerpreview`:
-```
-minecraft:shulker_box is not a container (id=… data=… container_slots=… other=[…])
-```
-
-### Temporary debug output (to be removed before release)
-
-While diagnosing, the mod prints chat lines:
-- `[SBT] tick` — every ~5 s while in a world (proves `native_tick` runs)
-- `[SBT] key down/up` — preview key press/release (proves `native_key` runs)
-- `[SBT] command: /…` — every typed command (proves `native_command` runs)
-- `[SBT] hud: …` — HUD diagnostics every ~5 s while Shift is held
-- `[SBT] preview shown` — once when a preview appears
-
-These will be removed once extraction works.
-
-### Useful commands during testing
+### Useful commands
 
 ```bash
-/shulkerpreview          # print held item contents to chat (+ debug reason)
+/shulkerpreview          # print held item contents to chat
 /shulkerpreview force    # toggle corner preview without holding Shift
 ```
 

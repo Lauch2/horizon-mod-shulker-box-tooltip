@@ -5,12 +5,7 @@ fn shulker_box_tooltip_hud(
 ) {
     use crate::game::shulker_box_tooltip as m;
     use horizon_client::extras::Corner;
-    if !game.native_on(m::ID) {
-        return;
-    }
-
-    if game.native_player().is_none() {
-        m::set_preview_state(None);
+    if !game.native_on(m::ID) || game.native_player().is_none() {
         return;
     }
 
@@ -27,27 +22,12 @@ fn shulker_box_tooltip_hud(
     let pressed = m::preview_key_pressed() || shift || m::preview_forced();
 
     if !pressed {
-        m::set_preview_state(None);
         return;
     }
 
-    let preview = match m::server_pull() {
-        Some(p) => p,
-        None => {
-            // TEMP DEBUG: the server-side game has no container in hand.
-            if m::debug_hud() {
-                game.native_chat("[SBT] hud: server has no container in hand");
-            }
-            m::set_preview_state(None);
-            return;
-        }
+    let Some(preview) = m::server_pull() else {
+        return;
     };
-
-    // TEMP DEBUG: one chat line each time the preview appears.
-    if m::preview_state().is_none() {
-        game.native_chat("[SBT] preview shown");
-    }
-    m::set_preview_state(Some(preview.clone()));
 
     let corner = match settings.corner {
         0 => Corner::TopLeft,
@@ -91,9 +71,16 @@ fn shulker_box_tooltip_hud(
 
         if let Some(item) = item_opt {
             let display = if item.count > 1 {
-                format!("{} x{}", item.item_id.strip_prefix("minecraft:").unwrap_or(&item.item_id), item.count)
+                format!(
+                    "{} x{}",
+                    item.item_id.strip_prefix("minecraft:").unwrap_or(&item.item_id),
+                    item.count
+                )
             } else {
-                item.item_id.strip_prefix("minecraft:").unwrap_or(&item.item_id).to_string()
+                item.item_id
+                    .strip_prefix("minecraft:")
+                    .unwrap_or(&item.item_id)
+                    .to_string()
             };
             let text_w = game.native_text_width(&display);
             let tx = sx + (m::SLOT_SIZE - text_w) / 2.0;
