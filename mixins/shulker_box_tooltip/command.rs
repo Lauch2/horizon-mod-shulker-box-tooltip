@@ -51,7 +51,8 @@ fn shulker_box_tooltip_command(
             }
         }
         None => {
-            game.native_chat(&format!("{} is not a container", held.item));
+            let why = m::extract_debug(held);
+            game.native_chat(&format!("{} is not a container ({why})", held.item));
         }
     }
 }
