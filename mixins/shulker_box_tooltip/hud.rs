@@ -10,7 +10,7 @@ fn shulker_box_tooltip_hud(
     }
 
     if game.native_player().is_none() {
-        m::PREVIEW_STATE.with(|s| s.set(None));
+        m::set_preview_state(None);
         return;
     }
 
@@ -19,20 +19,14 @@ fn shulker_box_tooltip_hud(
         m::settings(|key| game.native_setting(m::ID, key))
     };
 
-    let pressed = m::is_preview_key_pressed(game);
-    m::PREVIEW_KEY_PRESSED.with(|s| s.set(pressed));
+    let pressed = m::preview_key_pressed();
 
     if !pressed {
-        m::PREVIEW_STATE.with(|s| s.set(None));
+        m::set_preview_state(None);
         return;
     }
 
-    let player = match game.player.as_ref() {
-        Some(p) => p,
-        None => return,
-    };
-
-    let held_stack = match player.inventory.get(game.selected) {
+    let held_stack = match game.inventory.get(game.selected).and_then(|s| s.as_ref()) {
         Some(s) => s,
         None => return,
     };
@@ -40,12 +34,12 @@ fn shulker_box_tooltip_hud(
     let preview = match m::extract_container_contents(held_stack) {
         Some(p) if !p.items.is_empty() => p,
         _ => {
-            m::PREVIEW_STATE.with(|s| s.set(None));
+            m::set_preview_state(None);
             return;
         }
     };
 
-    m::PREVIEW_STATE.with(|s| s.set(Some(preview.clone())));
+    m::set_preview_state(Some(preview.clone()));
 
     let corner = match settings.corner {
         0 => Corner::TopLeft,

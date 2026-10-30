@@ -10,6 +10,6 @@ fn shulker_box_tooltip_key(
 
     let preview_key = m::preview_key(game);
     if key == preview_key {
-        m::PREVIEW_KEY_PRESSED.with(|s| s.set(pressed));
+        m::set_preview_key_pressed(pressed);
     }
 }

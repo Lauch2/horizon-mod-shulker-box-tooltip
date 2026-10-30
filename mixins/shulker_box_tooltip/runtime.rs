@@ -1,6 +1,5 @@
 use std::cell::Cell;
 use horizon_client::items::ItemStack;
-use horizon_world::nbt::Tag;
 
 pub const ID: &str = "shulker_box_tooltip";
 pub const NAME: &str = "ShulkerBoxTooltip";
@@ -12,25 +11,6 @@ pub const INK: u32 = 0xFF_FFFF;
 pub const SLOT_SIZE: f32 = 18.0;
 pub const SLOT_PADDING: f32 = 1.0;
 pub const MAX_COLS: usize = 9;
-
-const CONTAINER_TYPES: &[(&str, usize, u32)] = &[
-    ("minecraft:shulker_box", 27, 0xFF_404040),
-    ("minecraft:chest", 27, 0xFF_8B4513),
-    ("minecraft:trapped_chest", 27, 0xFF_8B4513),
-    ("minecraft:barrel", 27, 0xFF_8B4513),
-    ("minecraft:ender_chest", 27, 0xFF_800080),
-    ("minecraft:bundle", 64, 0xFF_D2691E),
-    ("minecraft:furnace", 3, 0xFF_696969),
-    ("minecraft:blast_furnace", 3, 0xFF_696969),
-    ("minecraft:smoker", 3, 0xFF_696969),
-    ("minecraft:hopper", 5, 0xFF_696969),
-    ("minecraft:dispenser", 9, 0xFF_696969),
-    ("minecraft:dropper", 9, 0xFF_696969),
-    ("minecraft:brewing_stand", 5, 0xFF_696969),
-    ("minecraft:chiseled_bookshelf", 6, 0xFF_8B4513),
-    ("minecraft:decorated_pot", 5, 0xFF_DEB887),
-    ("minecraft:lectern", 1, 0xFF_8B4513),
-];
 
 const SHULKER_COLORS: &[(&str, u32)] = &[
     ("white", 0xFF_F0F0F0),
@@ -100,6 +80,12 @@ impl Settings {
     }
 }
 
+thread_local! {
+    static SETTINGS: Cell<Option<Settings>> = const { Cell::new(None) };
+    static PREVIEW_STATE: Cell<Option<PreviewState>> = const { Cell::new(None) };
+    static PREVIEW_KEY_PRESSED: Cell<bool> = const { Cell::new(false) };
+}
+
 pub fn settings(get: impl Fn(&str) -> Option<String>) -> Settings {
     SETTINGS.with(|s| {
         let found = s.get().unwrap_or_else(|| Settings::read(get));
@@ -112,10 +98,20 @@ pub fn set_settings(new: Settings) {
     SETTINGS.with(|s| s.set(Some(new)));
 }
 
-thread_local! {
-    static SETTINGS: Cell<Option<Settings>> = const { Cell::new(None) };
-    static PREVIEW_STATE: Cell<Option<PreviewState>> = const { Cell::new(None) };
-    static PREVIEW_KEY_PRESSED: Cell<bool> = const { Cell::new(false) };
+pub fn preview_state() -> Option<PreviewState> {
+    PREVIEW_STATE.with(|s| s.get().clone())
+}
+
+pub fn set_preview_state(v: Option<PreviewState>) {
+    PREVIEW_STATE.with(|s| s.set(v));
+}
+
+pub fn preview_key_pressed() -> bool {
+    PREVIEW_KEY_PRESSED.with(|s| s.get())
+}
+
+pub fn set_preview_key_pressed(v: bool) {
+    PREVIEW_KEY_PRESSED.with(|s| s.set(v));
 }
 
 #[derive(Clone, Debug)]
@@ -129,14 +125,9 @@ pub struct PreviewState {
 pub struct ItemStackPreview {
     pub item_id: String,
     pub count: u32,
-    pub components: String,
 }
 
 impl PreviewState {
-    pub fn empty() -> Self {
-        Self { items: vec![], title: String::new(), color: 0xFF_404040 }
-    }
-
     pub fn dimensions(&self, settings: &Settings) -> (f32, f32) {
         let visible = if settings.compact_mode {
             self.items.iter().filter(|i| i.is_some()).count()
@@ -155,17 +146,8 @@ pub fn preview_key(game: &crate::game::Game<'_>) -> String {
     game.native_mod_key(ID, "preview", "key.keyboard.left.shift")
 }
 
-pub fn is_preview_key_pressed(game: &crate::game::Game<'_>) -> bool {
-    let key = preview_key(game);
-    if key == "key.keyboard.left.shift" {
-        game.native_mapping("key.sneak").map(|(d, _)| d).unwrap_or(false)
-    } else {
-        game.native_mapping(&key).map(|(d, _)| d).unwrap_or(false)
-    }
-}
-
 pub fn extract_container_contents(stack: &ItemStack) -> Option<PreviewState> {
-    let (title, max_slots, color) = match stack.item.as_str() {
+    let (title, max_slots, color) = match &*stack.item {
         "minecraft:shulker_box" => ("Shulker Box", 27, 0xFF_404040),
         "minecraft:chest" => ("Chest", 27, 0xFF_8B4513),
         "minecraft:trapped_chest" => ("Trapped Chest", 27, 0xFF_8B4513),
@@ -182,64 +164,58 @@ pub fn extract_container_contents(stack: &ItemStack) -> Option<PreviewState> {
         "minecraft:chiseled_bookshelf" => ("Chiseled Bookshelf", 6, 0xFF_8B4513),
         "minecraft:decorated_pot" => ("Decorated Pot", 5, 0xFF_DEB887),
         "minecraft:lectern" => ("Lectern", 1, 0xFF_8B4513),
+        _ if stack.item.starts_with("minecraft:") && stack.item.ends_with("_shulker_box") => {
+            let mut color = 0xFF_404040;
+            for (name, c) in SHULKER_COLORS {
+                if &*stack.item == &*format!("minecraft:{}_shulker_box", name) {
+                    color = *c;
+                    break;
+                }
+            }
+            ("Shulker Box", 27, color)
+        }
         _ => return None,
     };
 
-    let mut final_color = color;
-    if stack.item.starts_with("minecraft:") && stack.item.ends_with("_shulker_box") {
-        for (name, c) in SHULKER_COLORS {
-            if stack.item == format!("minecraft:{}_shulker_box", name) {
-                final_color = *c;
-                break;
-            }
-        }
-    }
-
     let data = stack.data()?;
-    let container_tag = data.other("minecraft:container")?;
-    let Tag::List(items) = container_tag else { return None };
+    let mut slots: Vec<Option<ItemStackPreview>> = Vec::with_capacity(max_slots.min(64));
 
-    let mut preview_items = Vec::with_capacity(max_slots);
-    for tag in items {
-        if let Tag::Compound(comp) = tag {
-            let item_id = comp.get("id")
-                .and_then(|v| v.as_string())
-                .unwrap_or_default();
-            let count = comp.get("count")
-                .and_then(|v| v.as_i64())
-                .unwrap_or(1) as u32;
-            let slot = comp.get("slot")
-                .and_then(|v| v.as_i64())
-                .unwrap_or(0) as usize;
-
-            while preview_items.len() <= slot {
-                preview_items.push(None);
+    if !data.container.is_empty() {
+        for (slot, inner) in &data.container {
+            let s = usize::from(*slot);
+            while slots.len() <= s {
+                slots.push(None);
             }
-
-            if !item_id.is_empty() && item_id != "minecraft:air" {
-                let components = comp.iter()
-                    .filter(|(k, _)| *k != "id" && *k != "count" && *k != "slot")
-                    .map(|(k, _)| k.as_str())
-                    .collect::<Vec<_>>()
-                    .join(", ");
-
-                preview_items[slot] = Some(ItemStackPreview {
-                    item_id,
-                    count,
-                    components,
-                });
-            }
+            slots[s] = Some(ItemStackPreview {
+                item_id: inner.item.to_string(),
+                count: inner.count,
+            });
         }
+    } else if !data.bundle_contents.is_empty() {
+        for (i, inner) in data.bundle_contents.iter().enumerate() {
+            while slots.len() <= i {
+                slots.push(None);
+            }
+            slots[i] = Some(ItemStackPreview {
+                item_id: inner.item.to_string(),
+                count: inner.count,
+            });
+        }
+    } else {
+        return None;
     }
 
-    while preview_items.last().is_some_and(|s| s.is_none()) {
-        preview_items.pop();
+    while slots.last().is_some_and(|s| s.is_none()) {
+        slots.pop();
+    }
+    if slots.is_empty() {
+        return None;
     }
 
     Some(PreviewState {
-        items: preview_items,
+        items: slots,
         title: title.to_string(),
-        color: final_color,
+        color,
     })
 }
 
@@ -264,5 +240,10 @@ mod tests {
         assert!(!s.show_key_hints);
         s.click(2);
         assert!(s.compact_mode);
+    }
+
+    #[test]
+    fn test_shulker_colors_count() {
+        assert_eq!(SHULKER_COLORS.len(), 16);
     }
 }

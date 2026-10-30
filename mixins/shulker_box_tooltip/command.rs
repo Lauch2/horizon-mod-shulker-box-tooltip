@@ -16,15 +16,7 @@ fn shulker_box_tooltip_command(
     }
     *ran = true;
 
-    let player = match game.player.as_ref() {
-        Some(p) => p,
-        None => {
-            game.native_chat("Not in a world");
-            return;
-        }
-    };
-
-    let held = match player.inventory.get(game.selected) {
+    let held = match game.inventory.get(game.selected).and_then(|s| s.as_ref()) {
         Some(s) => s,
         None => {
             game.native_chat("No item in hand");
