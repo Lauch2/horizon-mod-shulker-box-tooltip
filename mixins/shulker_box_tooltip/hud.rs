@@ -44,6 +44,10 @@ fn shulker_box_tooltip_hud(
         }
     };
 
+    // TEMP DEBUG: one chat line each time the preview appears.
+    if m::preview_state().is_none() {
+        game.native_chat("[SBT] preview shown");
+    }
     m::set_preview_state(Some(preview.clone()));
 
     let corner = match settings.corner {

@@ -10,6 +10,11 @@ fn shulker_box_tooltip_key(
 
     let preview_key = m::preview_key(game);
     if key == preview_key {
+        // TEMP DEBUG: proves the key hook receives the preview key.
+        game.native_chat(&format!(
+            "[SBT] key {}",
+            if pressed { "down" } else { "up" }
+        ));
         m::set_preview_key_pressed(pressed);
     }
 }
